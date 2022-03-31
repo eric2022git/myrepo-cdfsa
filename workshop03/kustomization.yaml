@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../workshop02/task2
+
+namePrefix: kux-
+nameSuffix: -k8s
+
+commonLabels:
+  deployDate: mar-31-2022
+
+replicas:
+  - name: bggapp-deploy
+    count: 2
