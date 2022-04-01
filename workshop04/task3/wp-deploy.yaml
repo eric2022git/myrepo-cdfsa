@@ -30,57 +30,6 @@ spec:
           storage: 10Gi
       storageClassName: do-block-storage
 ---
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   name: wpdb-deploy
-#   labels:
-#     name: wpdb-deploy
-# spec:
-#   replicas: 1
-#   selector:
-#     matchLabels:
-#       name: wpdb-pod
-#   template:
-#     metadata:
-#       name: wpdb-pod
-#       labels:
-#         name: wpdb-pod
-#         dept: eng
-#         purpose: database
-#       namespace: mywp
-#     spec:
-#       volumes:
-#         - name: wpdb-vol
-#           persistentVolumeClaim:
-#             claimName: data-pvc
-#       containers:
-#         - name: wpdb-pod
-#           image: stackupiss/wp-database:v1
-#           imagePullPolicy: IfNotPresent
-#           ports:
-#             - containerPort: 3306
-#           volumeMounts:
-#             - name: wpdb-vol
-#               mountPath: /var/lib/mysql
-# ---
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: wpdb-svc
-# spec:
-#   type: ClusterIP
-#   ports:
-#     - name: http
-#       port: 3306
-#       targetPort: 3306
-#   selector:
-#     name: wpdb-pod
-# ...
-# #
-# wpAPP#
-#
----
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -89,7 +38,6 @@ metadata:
     name: wpapp-cm
 data:
   wp_DB_USER: wordpress
-  # wp_DB_HOST: mydb-cluster-mysql.mywp.svc.cluster.local
   wp_DB_HOST: mydb-cluster-mysql-master
   wp_DB_NAME: wordpress
 ---
@@ -134,13 +82,6 @@ spec:
         - name: wpapp-pod
           image: wordpress:latest
           imagePullPolicy: IfNotPresent
-          # resources:
-          #   requests:
-          #     cpu: 100m
-          #     memory: 128Mi
-          # args:
-          #   - --prefix
-          #   - /v1
           env:
             - name: WORDPRESS_DB_USER
               valueFrom:
@@ -188,8 +129,8 @@ metadata:
   name: wpapp-ing
   labels:
     name: wpapp-ing
-annotations:
-  nginx.ingress.kubernetes.io/limit-rps: 5
+  annotations:
+    nginx.ingress.kubernetes.io/limit-rps: "5"
 spec:
   ingressClassName: nginx
   rules:

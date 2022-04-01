@@ -1,24 +1,38 @@
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: wp-netpol-deny-all-app
+#   labels:
+#     name: wp-netpol-deny-all-app
+# spec:
+#   podSelector:
+#     matchLabels:
+#       name: wpapp-pod
+#   policyTypes:
+#     - Ingress
+#     - Egress
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: wp-netpol-deny-all-db
+#   labels:
+#     name: wp-netpol-deny-all-db
+# spec:
+#   podSelector:
+#     matchLabels:
+#       app.kubernetes.io/component: database
+#   policyTypes:
+#     - Ingress
+#     - Egress
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: wp-netpol-deny-all
+  name: wp-netpol-allow-db
   labels:
-    name: wp-netpol-deny-all
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/component: database
-  policyTypes:
-    - Ingress
-    - Egress
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: wp-netpol-allow-fe
-  labels:
-    name: wp-netpol-allow-fe
+    name: wp-netpol-allow-db
 spec:
   podSelector:
     matchLabels:
@@ -34,23 +48,28 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: wp-netpol-allow-api
+  name: wp-netpol-allow-apo
   labels:
-    name: wp-netpol-allow-api
+    name: wp-netpol-allow-app
 spec:
   podSelector:
     matchLabels:
       name: wpapp-pod
   policyTypes:
-    - Ingress
-    - Egress
+  - Ingress
+  - Egress
   ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          type: wpapp-svc
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: ingress-nginx
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: ingress-nginx
   egress:
-  - to:
-    - podSelector:
-        matchLabels:
-          app.kubernetes.io/component: database
+      - ports:
+        - port: 3306
+          protocol: TCP
+    # - podSelector:
+      #     matchLabels:
+      #       role: master
