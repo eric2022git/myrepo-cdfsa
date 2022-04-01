@@ -1,0 +1,243 @@
+# WPDB
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mydb-secret
+type: Opaque
+data:
+  ROOT_PASSWORD: Y2hhbmdlaXQ=
+  USER: d29yZHByZXNz
+  PASSWORD: d29yZHByZXNz
+  DATABASE: d29yZHByZXNz
+---
+apiVersion: mysql.presslabs.org/v1alpha1
+kind: MysqlCluster
+metadata:
+  name: mydb-cluster
+  labels:
+    name: mydb-cluster
+spec:
+  replicas: 2
+  secretName: mydb-secret
+  mysqlVersion: "8.0"
+  volumeSpec:
+    persistentVolumeClaim:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: do-block-storage
+---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: wpdb-deploy
+#   labels:
+#     name: wpdb-deploy
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       name: wpdb-pod
+#   template:
+#     metadata:
+#       name: wpdb-pod
+#       labels:
+#         name: wpdb-pod
+#         dept: eng
+#         purpose: database
+#       namespace: mywp
+#     spec:
+#       volumes:
+#         - name: wpdb-vol
+#           persistentVolumeClaim:
+#             claimName: data-pvc
+#       containers:
+#         - name: wpdb-pod
+#           image: stackupiss/wp-database:v1
+#           imagePullPolicy: IfNotPresent
+#           ports:
+#             - containerPort: 3306
+#           volumeMounts:
+#             - name: wpdb-vol
+#               mountPath: /var/lib/mysql
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: wpdb-svc
+# spec:
+#   type: ClusterIP
+#   ports:
+#     - name: http
+#       port: 3306
+#       targetPort: 3306
+#   selector:
+#     name: wpdb-pod
+# ...
+# #
+# wpAPP#
+#
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wpapp-cm
+  labels:
+    name: wpapp-cm
+data:
+  wp_DB_USER: wordpress
+  # wp_DB_HOST: mydb-cluster-mysql.mywp.svc.cluster.local
+  wp_DB_HOST: mydb-cluster-mysql-master
+  wp_DB_NAME: wordpress
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wpapp-secret
+data:
+  wp_DB_PASSWORD: d29yZHByZXNz
+---
+# POD V1
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wpapp-deploy
+  labels:
+    name: wpapp-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: wpapp-pod
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      name: wpapp-pod
+      labels:
+        name: wpapp-pod
+        dept: eng
+        purpose: application
+      namespace: mywp
+    spec:
+      volumes:
+        - name: wpapp-vol
+          persistentVolumeClaim:
+            claimName: data-pvc
+      containers:
+        - name: wpapp-pod
+          image: wordpress:latest
+          imagePullPolicy: IfNotPresent
+          # resources:
+          #   requests:
+          #     cpu: 100m
+          #     memory: 128Mi
+          # args:
+          #   - --prefix
+          #   - /v1
+          env:
+            - name: WORDPRESS_DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: wpapp-cm
+                  key: wp_DB_USER
+            - name: WORDPRESS_DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: wpapp-cm
+                  key: wp_DB_HOST
+            - name: WORDPRESS_DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: wpapp-cm
+                  key: wp_DB_NAME
+            - name: WORDPRESS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wpapp-secret
+                  key: wp_DB_PASSWORD
+          ports:
+            - name: app-port
+              containerPort: 80
+          volumeMounts:
+            - name: wpapp-vol
+              mountPath: /var/www/html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wpapp-svc
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: app-port
+  selector:
+    name: wpapp-pod
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wpapp-ing
+  labels:
+    name: wpapp-ing
+annotations:
+  nginx.ingress.kubernetes.io/limit-rps: 5
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: wp-139.59.216.163.nip.io
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: wpapp-svc
+                port:
+                  number: 80
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-pvc
+  labels:
+    name: data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: do-block-storage
+# ---
+# apiVersion: autoscaling/v2beta2
+# kind: HorizontalPodAutoscaler
+
+# metadata:
+#   name: wpapp-hpa
+#   labels:
+#       name: wpapp-hpa
+
+# spec:
+#   minReplicas: 1
+#   maxReplicas: 8
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: wpapp-deploy1
+#   metrics:
+#     - type: Resource
+#       resource:
+#         name: cpu
+#         target:
+#           type: Utilization
+#           averageUtilization: 30
+# ...
