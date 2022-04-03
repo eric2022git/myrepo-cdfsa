@@ -36,7 +36,8 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/component: database
+      role: master
+      namespace: mywp
   policyTypes:
     - Ingress
     - Egress
@@ -45,11 +46,14 @@ spec:
     - podSelector:
         matchLabels:
           name: wpapp-pod
+          namespace: mywp
+
   egress:
   - to:
     - podSelector:
         matchLabels:
            name: wpapp-pod
+           namespace: mywp
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -61,6 +65,7 @@ spec:
   podSelector:
     matchLabels:
       name: wpapp-pod
+      namespace: mywp
   policyTypes:
   - Ingress
   - Egress
@@ -72,8 +77,13 @@ spec:
       - podSelector:
           matchLabels:
             app.kubernetes.io/name: ingress-nginx
+      - podSelector:
+          matchLabels:
+              role: master
+              namespace: mywp
   egress:
     - to:
       - podSelector:
-            matchLabels:
+          matchLabels:
               role: master
+              namespace: mywp
