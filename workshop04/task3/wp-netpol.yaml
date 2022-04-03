@@ -39,11 +39,17 @@ spec:
       app.kubernetes.io/component: database
   policyTypes:
     - Ingress
+    - Egress
   ingress:
   - from:
     - podSelector:
         matchLabels:
           name: wpapp-pod
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+           name: wpapp-pod
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -67,9 +73,7 @@ spec:
           matchLabels:
             app.kubernetes.io/name: ingress-nginx
   egress:
-      - ports:
-        - port: 3306
-          protocol: TCP
-    # - podSelector:
-      #     matchLabels:
-      #       role: master
+    - to:
+      - podSelector:
+            matchLabels:
+              role: master
