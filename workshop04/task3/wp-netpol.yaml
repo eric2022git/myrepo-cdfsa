@@ -1,31 +1,33 @@
-# ---
-# apiVersion: networking.k8s.io/v1
-# kind: NetworkPolicy
-# metadata:
-#   name: wp-netpol-deny-all-app
-#   labels:
-#     name: wp-netpol-deny-all-app
-# spec:
-#   podSelector:
-#     matchLabels:
-#       name: wpapp-pod
-#   policyTypes:
-#     - Ingress
-#     - Egress
-# ---
-# apiVersion: networking.k8s.io/v1
-# kind: NetworkPolicy
-# metadata:
-#   name: wp-netpol-deny-all-db
-#   labels:
-#     name: wp-netpol-deny-all-db
-# spec:
-#   podSelector:
-#     matchLabels:
-#       app.kubernetes.io/component: database
-#   policyTypes:
-#     - Ingress
-#     - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: wp-netpol-deny-all-app
+  labels:
+    name: wp-netpol-deny-all-app
+spec:
+  podSelector:
+    matchLabels:
+      name: wpapp-pod
+      namespace: mywp
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: wp-netpol-deny-all-db
+  labels:
+    name: wp-netpol-deny-all-db
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: database
+      namespace: mywp
+  policyTypes:
+    - Ingress
+    - Egress
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
