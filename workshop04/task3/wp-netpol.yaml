@@ -5,6 +5,7 @@ metadata:
   name: wp-netpol-deny-all-app
   labels:
     name: wp-netpol-deny-all-app
+  namespace: mywp
 spec:
   podSelector:
     matchLabels:
@@ -35,6 +36,7 @@ metadata:
   name: wp-netpol-allow-db
   labels:
     name: wp-netpol-allow-db
+    namespace: mywp
 spec:
   podSelector:
     matchLabels:
@@ -63,6 +65,7 @@ metadata:
   name: wp-netpol-allow-apo
   labels:
     name: wp-netpol-allow-app
+    namespace: mywp
 spec:
   podSelector:
     matchLabels:
